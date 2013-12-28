@@ -49,7 +49,7 @@ public class BlockingConnector {
 
 	public BlockingConnector(Executor executor) {
 		if (executor == null) {
-			throw new NullPointerException("Executor Can't Be NULL!~");
+			throw new IllegalArgumentException("Executor Can't Be NULL!~");
 		}
 		this.executor = executor;
 	}

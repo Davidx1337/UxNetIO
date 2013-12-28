@@ -26,9 +26,6 @@ public class ByteArrayPacket implements UxPacket {
 
     @Override
     public byte[] getBytes() {
-		if (plew != null) {
-			return plew.getBytes();
-		}
         return data;
     }
 }
