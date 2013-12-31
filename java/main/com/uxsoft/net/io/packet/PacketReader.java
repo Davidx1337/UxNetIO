@@ -33,6 +33,8 @@ public interface PacketReader {
     int read(byte[] buf, int count);
 
     int read(byte[] buf, int count, int offset);
+    
+    byte[] read(int count);
 
     String readString();
 

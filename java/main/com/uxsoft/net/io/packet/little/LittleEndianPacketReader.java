@@ -27,7 +27,11 @@ public class LittleEndianPacketReader implements PacketReader {
     }
     
     private int readByte2() {
-        return bytes[pos++]&0xFF;
+        try {
+            return bytes[pos++]&0xFF;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new RuntimeException("Reached end of bytestream! Pos=" + pos + ", Length=" + bytes.length);
+        }
     }
 
     @Override
@@ -99,7 +103,7 @@ public class LittleEndianPacketReader implements PacketReader {
         return String.valueOf(chrBuf);
     }
 
-    public long getBytesRead() {
+    public int getBytesRead() {
         return pos;
     }
 
@@ -119,9 +123,7 @@ public class LittleEndianPacketReader implements PacketReader {
     }
 
     public void skip(int num) {
-        for (int x = 0; x < num; x++) {
-            readByte();
-        }
+        pos += num;
     }
 
     public int available() {

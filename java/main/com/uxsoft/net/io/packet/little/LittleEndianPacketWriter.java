@@ -5,10 +5,10 @@
 package com.uxsoft.net.io.packet.little;
 
 import com.uxsoft.net.io.ByteArrayPacket;
+import com.uxsoft.net.io.IntValueHolder;
 import com.uxsoft.net.io.UxPacket;
 import com.uxsoft.net.io.packet.PacketWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.Arrays;
 
 /**
  *
@@ -17,45 +17,58 @@ import java.io.IOException;
 public class LittleEndianPacketWriter
         implements PacketWriter {
 
-    private ByteArrayOutputStream baos;
+    private byte[] bytes;
+    private int pos = 0;
 
     public LittleEndianPacketWriter() {
         this(32);
     }
 
     public LittleEndianPacketWriter(int size) {
-        baos = new ByteArrayOutputStream(size);
+        bytes = new byte[size];
+    }
+
+    private void dontOverflow(int zz) {
+        if (zz - bytes.length > 0) {
+            int xo = bytes.length << 1;
+            bytes = Arrays.copyOf(bytes, xo);
+        }
     }
 
     public void writeByte(int value) {
-        baos.write(value);
+        dontOverflow(1);
+        bytes[pos++] = (byte) value;
     }
 
     public void writeShort(int value) {
-        baos.write((byte) (value & 0xFF));
-        baos.write((byte) ((value >>> 8) & 0xFF));
+        dontOverflow(2);
+        bytes[pos++] = ((byte) (value & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 8) & 0xFF));
     }
 
     public void writeInt(int value) {
-        baos.write((byte) (value & 0xFF));
-        baos.write((byte) ((value >>> 8) & 0xFF));
-        baos.write((byte) ((value >>> 16) & 0xFF));
-        baos.write((byte) ((value >>> 24) & 0xFF));
+        dontOverflow(4);
+        bytes[pos++] = ((byte) (value & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 8) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 16) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 24) & 0xFF));
     }
 
     public void writeLong(long value) {
-        baos.write((byte) (value & 0xFF));
-        baos.write((byte) ((value >>> 8) & 0xFF));
-        baos.write((byte) ((value >>> 16) & 0xFF));
-        baos.write((byte) ((value >>> 24) & 0xFF));
-        baos.write((byte) ((value >>> 32) & 0xFF));
-        baos.write((byte) ((value >>> 40) & 0xFF));
-        baos.write((byte) ((value >>> 48) & 0xFF));
-        baos.write((byte) ((value >>> 56) & 0xFF));
+        dontOverflow(8);
+        bytes[pos++] = ((byte) (value & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 8) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 16) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 24) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 32) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 40) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 48) & 0xFF));
+        bytes[pos++] = ((byte) ((value >>> 56) & 0xFF));
     }
 
     public void writeUnsignedByte(int value) {
-        baos.write((byte) (value & 0xff));
+        dontOverflow(1);
+        bytes[pos++] = ((byte) (value & 0xff));
     }
 
     public void writeUnsignedShort(int value) {
@@ -71,37 +84,55 @@ public class LittleEndianPacketWriter
     }
 
     public void write(byte[] buf) {
-        try {
-            baos.write(buf);
-        } catch (IOException ex) {
-            throw new AssertionError(ex);
-        }
+        write(buf, buf.length);
     }
 
     public void write(byte[] buf, int count) {
-        baos.write(buf, 0, count);
+        dontOverflow(count);
+        for (int i = 0; i < count; i++) {
+            bytes[pos++] = buf[i];
+        }
     }
 
     public void write(byte[] buf, int count, int offset) {
-        baos.write(buf, offset, count);
+        dontOverflow(count);
+        for (int i = 0; i < count; i++) {
+            bytes[pos++] = buf[i + offset];
+        }
     }
 
     public void writeString(String string) {
+        dontOverflow(2+string.length());
         writeShort(string.length());
         write(string.getBytes());
     }
 
     public void writeShortString(String string) {
+        dontOverflow(1+string.length());
         writeByte(string.length());
         write(string.getBytes());
     }
 
     public void writeLongString(String string) {
+        dontOverflow(4+string.length());
         writeLong(string.length());
         write(string.getBytes());
     }
 
     public UxPacket getPacket() {
-        return new ByteArrayPacket(baos.toByteArray());
+        return new ByteArrayPacket(Arrays.copyOf(bytes, pos));
+    }
+
+    public void write(int b) {
+        dontOverflow(1);
+        bytes[pos++] = (byte) (b);
+    }
+
+    public byte[] getBytes() {
+        return Arrays.copyOf(bytes, pos);
+    }
+
+    public void writeHeader(IntValueHolder h) {
+        write(h.getValue());
     }
 }

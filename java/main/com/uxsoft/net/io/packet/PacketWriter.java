@@ -4,6 +4,7 @@
  */
 package com.uxsoft.net.io.packet;
 
+import com.uxsoft.net.io.IntValueHolder;
 import com.uxsoft.net.io.UxPacket;
 
 /**
@@ -27,6 +28,8 @@ public interface PacketWriter {
     void writeUnsignedInt(long value);
 
     void writeUnsignedLong(long value);
+    
+    void write(int b);
 
     void write(byte[] buf);
 
@@ -41,4 +44,8 @@ public interface PacketWriter {
     void writeLongString(String string);
     
     UxPacket getPacket();
+    
+    byte[] getBytes();
+    
+    void writeHeader(IntValueHolder h);
 }

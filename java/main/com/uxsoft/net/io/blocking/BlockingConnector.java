@@ -2,7 +2,6 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package com.uxsoft.net.io.blocking;
 
 import java.io.IOException;
@@ -31,267 +30,270 @@ import com.uxsoft.net.io.common.TrafficMask;
  * @author David
  */
 public class BlockingConnector {
-	private Socket socket;
-	private InputStream input;
-	private OutputStream output;
-	private boolean connected = false;
-	private BlockingProtocol protocol;
-	private IoSession session;
-	private IoListener listener;
-	private InputProcessor inputProcessor;
-	private OutputProcessor outputProcessor;
-	private LinkedList<BlockingWriteRequest> writeQueue = new LinkedList();
-	private ReentrantReadWriteLock rwL = new ReentrantReadWriteLock();
-	private Lock rLock = rwL.readLock();
-	private Lock wLock = rwL.writeLock();
-	private Executor executor;
-	private Lock inputProcessLock = new ReentrantLock(), outputProcessLock = new ReentrantLock();
 
-	public BlockingConnector(Executor executor) {
-		if (executor == null) {
-			throw new IllegalArgumentException("Executor Can't Be NULL!~");
-		}
-		this.executor = executor;
-	}
+    private Socket socket;
+    private InputStream input;
+    private OutputStream output;
+    private boolean connected = false;
+    private BlockingProtocol protocol;
+    private IoSession session;
+    private IoListener listener;
+    private InputProcessor inputProcessor;
+    private OutputProcessor outputProcessor;
+    private LinkedList<BlockingWriteRequest> writeQueue = new LinkedList();
+    private ReentrantReadWriteLock rwL = new ReentrantReadWriteLock();
+    private Lock rLock = rwL.readLock();
+    private Lock wLock = rwL.writeLock();
+    private Executor executor;
+    private Lock inputProcessLock = new ReentrantLock(), outputProcessLock = new ReentrantLock();
 
-	public void connect(InetSocketAddress endPoint, IoListener listener, BlockingProtocol protocol)
-			throws IOException {
-		socket = new Socket(endPoint.getAddress(), endPoint.getPort());
-		input = socket.getInputStream();
-		output = socket.getOutputStream();
-		connected = socket.isConnected();
-		this.listener = listener;
-		this.protocol = protocol;
-		session = new IoSession() {
+    public BlockingConnector(Executor executor) {
+        if (executor == null) {
+            throw new IllegalArgumentException("Executor Can't Be NULL!~");
+        }
+        this.executor = executor;
+    }
 
-			Map<String, Object> attrs = new HashMap();
+    public void connect(InetSocketAddress endPoint, IoListener listener, BlockingProtocol protocol)
+            throws IOException {
+        socket = new Socket(endPoint.getAddress(), endPoint.getPort());
+        input = socket.getInputStream();
+        output = socket.getOutputStream();
+        connected = socket.isConnected();
+        this.listener = listener;
+        this.protocol = protocol;
+        session = new IoSession() {
 
-			public void write(Object message) {
-				BlockingConnector.this.write(message);
-			}
+            Map<String, Object> attrs = new HashMap();
 
-			public SelectionKey getSelectionKey() {
-				return null;
-			}
+            public void write(Object message) {
+                BlockingConnector.this.write(message);
+            }
 
-			public SocketChannel getSocketChannel() {
-				return null;
-			}
+            public SelectionKey getSelectionKey() {
+                return null;
+            }
 
-			public int getSentBytes() {
-				return 0;
-			}
+            public SocketChannel getSocketChannel() {
+                return null;
+            }
 
-			public int getReceivedBytes() {
-				return 0;
-			}
+            public int getSentBytes() {
+                return 0;
+            }
 
-			public int getTotalBytes() {
-				return 0;
-			}
+            public int getReceivedBytes() {
+                return 0;
+            }
 
-			public TrafficMask getTrafficMask() {
-				return null;
-			}
+            public int getTotalBytes() {
+                return 0;
+            }
 
-			public Object removeAttribute(String key) {
-				return attrs.remove(key);
-			}
+            public TrafficMask getTrafficMask() {
+                return null;
+            }
 
-			public boolean hasAttribute(String key) {
-				return attrs.containsKey(key);
-			}
+            public Object removeAttribute(String key) {
+                return attrs.remove(key);
+            }
 
-			public void setAttribute(String key, Object o) {
-				attrs.put(key, o);
-			}
+            public boolean hasAttribute(String key) {
+                return attrs.containsKey(key);
+            }
 
-			public Object getAttribute(String key) {
-				return attrs.get(key);
-			}
+            public void setAttribute(String key, Object o) {
+                attrs.put(key, o);
+            }
 
-			public SocketAddress getRemoteAddress() {
-				return socket.getRemoteSocketAddress();
-			}
+            public Object getAttribute(String key) {
+                return attrs.get(key);
+            }
 
-			public void close() {
-				BlockingConnector.this.close();
-			}
+            public SocketAddress getRemoteAddress() {
+                return socket.getRemoteSocketAddress();
+            }
 
-			public boolean isConnected() {
-				return connected();
-			}
-		};
+            public void close() {
+                BlockingConnector.this.close();
+            }
 
-		inputProcessor = new InputProcessor();
-		outputProcessor = new OutputProcessor();
-		executor.execute(inputProcessor);
-		executor.execute(outputProcessor);
-	}
+            public boolean isConnected() {
+                return connected();
+            }
+        };
 
-	public IoSession getSession() {
-		return session;
-	}
+        inputProcessor = new InputProcessor();
+        outputProcessor = new OutputProcessor();
+        executor.execute(inputProcessor);
+        executor.execute(outputProcessor);
+    }
 
-	public boolean connected() {
-		return connected;
-	}
+    public IoSession getSession() {
+        return session;
+    }
 
-	public void close() {
-		inputProcessLock.lock();
-		outputProcessLock.lock();
-		try {
-			try {
-				input.close();
-				output.close();
-				socket.close();
-				socket = null;
-			} catch (Exception e) {
-				e.printStackTrace();
-			}  finally {
-				socket = null;
-				input = null;
-				output = null;
-				connected = false;
-			}
-		} finally {
-			inputProcessLock.unlock();
-			outputProcessLock.unlock();
-		}
-	}
+    public boolean connected() {
+        return connected;
+    }
 
-	public void write(Object obj) {
-		try {
+    public void close() {
+        inputProcessLock.lock();
+        outputProcessLock.lock();
+        try {
+            try {
+                input.close();
+                output.close();
+                socket.close();
+                socket = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                socket = null;
+                input = null;
+                output = null;
+                connected = false;
+            }
+        } finally {
+            inputProcessLock.unlock();
+            outputProcessLock.unlock();
+        }
+    }
 
-			byte[] bytes = protocol.encodeObject(session, obj, null); // todo
-			wLock.lock();
-			try {
-				writeQueue.addLast(new MyWriteRequest(bytes, obj));
-			} finally {
-				wLock.unlock();
-			}
-		} catch (Throwable ex) {
-			ex.printStackTrace();
-		}
-	}
+    public void write(Object obj) {
+        try {
 
-	class InputProcessor
-			implements Runnable {
+            byte[] bytes = protocol.encodeObject(session, obj, null); // todo
+            wLock.lock();
+            try {
+                writeQueue.addLast(new MyWriteRequest(bytes, obj));
+            } finally {
+                wLock.unlock();
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+    }
 
-		public void run() {
-			byte[] buf = new byte[2048];
-			while (connected) {
-				try {
-					int read = 0;
-					inputProcessLock.lock();
-					try {
-						read = input.read(buf);
-					} finally {
-						inputProcessLock.unlock();
-					}
-					if (read <= 0) {
-						listener.onSessionClosed(session);
-						return;
-					}
-					DecoderOutputImpl decoder = new DecoderOutputImpl();
-					protocol.decodeObject(session, buf, read, decoder);
-					List<Object> messages = decoder.oList;
-					if (messages != null) {
-						Iterator<Object> messageIterator = messages.iterator();
-						while (messageIterator.hasNext()) {
-							Object msg = messageIterator.next();
-							messageIterator.remove();
-							if (msg != null) {
-								listener.onMessageReceived(session, msg);
-								////System.err.println("onMessageReceived() Invoked");
-							}
-						}
-					}
-					decoder = null;
-					buf = null;
-				} catch (Throwable e) {
-					e.printStackTrace();
-				}
-			}
-		}
+    class InputProcessor
+            implements Runnable {
 
-	}
+        public void run() {
+            byte[] buf = new byte[2048];
+            while (connected) {
+                try {
+                    int read = 0;
+                    inputProcessLock.lock();
+                    try {
+                        read = input.read(buf);
+                    } finally {
+                        inputProcessLock.unlock();
+                    }
+                    if (read <= 0) {
+                        listener.onSessionClosed(session);
+                        return;
+                    }
+                    DecoderOutputImpl decoder = new DecoderOutputImpl();
+                    protocol.decodeObject(session, buf, read, decoder);
+                    List<Object> messages = decoder.oList;
+                    if (messages != null) {
+                        Iterator<Object> messageIterator = messages.iterator();
+                        while (messageIterator.hasNext()) {
+                            Object msg = messageIterator.next();
+                            messageIterator.remove();
+                            if (msg != null) {
+                                listener.onMessageReceived(session, msg);
+                                ////System.err.println("onMessageReceived() Invoked");
+                            }
+                        }
+                    }
+                    decoder = null;
+                    buf = null;
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-	class OutputProcessor
-			implements Runnable {
+    }
 
-		private LinkedList<BlockingWriteRequest> byteQueue = new LinkedList();
+    class OutputProcessor
+            implements Runnable {
 
-		public void run() {
-			while (connected) {
-				try {
-					rLock.lock();
-					try {
-						if (writeQueue.size() > 0) {
-							wLock.lock();
-							try {
-								while (!writeQueue.isEmpty()) {
-									BlockingWriteRequest lastWriteReq = writeQueue.pollFirst();
-									byteQueue.addLast(lastWriteReq);
-								}
-							} finally {
-								wLock.unlock();
-							}
-						}
-					} finally {
-						rLock.unlock();
-					}
-					outputProcessLock.lock();
-					try {
-						while (!byteQueue.isEmpty()) {
-							BlockingWriteRequest req = writeQueue.poll();
-							listener.onMessageSent(session, req.getMessage());
-							output.write(req.getBytes());
-							req.dispose();
-						}
-					} finally {
-						outputProcessLock.unlock();
-					}
-				} catch (Throwable e) {
-					e.printStackTrace();
-				}
-			}
-		}
+        private LinkedList<BlockingWriteRequest> byteQueue = new LinkedList();
 
-	}
-	
-	static class DecoderOutputImpl
-			implements BlockingDecoderOutput {
-		List<Object> oList;
+        public void run() {
+            while (connected) {
+                try {
+                    rLock.lock();
+                    try {
+                        if (writeQueue.size() > 0) {
+                            wLock.lock();
+                            try {
+                                while (!writeQueue.isEmpty()) {
+                                    BlockingWriteRequest lastWriteReq = writeQueue.pollFirst();
+                                    byteQueue.addLast(lastWriteReq);
+                                }
+                            } finally {
+                                wLock.unlock();
+                            }
+                        }
+                    } finally {
+                        rLock.unlock();
+                    }
+                    outputProcessLock.lock();
+                    try {
+                        while (!byteQueue.isEmpty()) {
+                            BlockingWriteRequest req = writeQueue.poll();
+                            listener.onMessageSent(session, req.getMessage());
+                            output.write(req.getBytes());
+                            req.dispose();
+                        }
+                    } finally {
+                        outputProcessLock.unlock();
+                    }
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-		public void write(Object out) {
-			if (oList == null) {
-				oList = new LinkedList();
-			}
-			oList.add(out);
-		}
-	}
+    }
 
-	static class MyWriteRequest implements BlockingWriteRequest {
-		byte[] data;
-		Object message;
+    static class DecoderOutputImpl
+            implements BlockingDecoderOutput {
 
-		public MyWriteRequest(byte[] data, Object message) {
-			this.data = data;
-			this.message = message;
-		}
+        List<Object> oList;
 
-		public byte[] getBytes() {
-			return data;
-		}
+        public void write(Object out) {
+            if (oList == null) {
+                oList = new LinkedList();
+            }
+            oList.add(out);
+        }
+    }
 
-		public Object getMessage() {
-			return message;
-		}
+    static class MyWriteRequest implements BlockingWriteRequest {
 
-		public void dispose() {
-			data = null;
-			message = null;
-		}
-	}
+        byte[] data;
+        Object message;
+
+        public MyWriteRequest(byte[] data, Object message) {
+            this.data = data;
+            this.message = message;
+        }
+
+        public byte[] getBytes() {
+            return data;
+        }
+
+        public Object getMessage() {
+            return message;
+        }
+
+        public void dispose() {
+            data = null;
+            message = null;
+        }
+    }
 }
