@@ -29,7 +29,7 @@ public class LittleEndianPacketWriter
     }
 
     private void dontOverflow(int zz) {
-        if (zz - bytes.length > 0) {
+        if (pos+zz >= bytes.length) {
             int xo = bytes.length << 1;
             bytes = Arrays.copyOf(bytes, xo);
         }
